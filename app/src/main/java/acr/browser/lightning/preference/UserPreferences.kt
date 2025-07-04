@@ -182,7 +182,7 @@ class UserPreferences @Inject constructor(
      * True if the browser should extract the theme color from a website and color the UI with it,
      * false otherwise.
      */
-    var colorModeEnabled by preferences.booleanPreference(ENABLE_COLOR_MODE, true)
+    var colorModeEnabled by preferences.booleanPreference(ENABLE_COLOR_MODE, false)
 
     /**
      * The index of the URL/search box display choice/
@@ -227,7 +227,7 @@ class UserPreferences @Inject constructor(
 
     var tabConfiguration by preferences.enumPreference(
         TAB_CONFIGURATION, if (showTabsInDrawer) {
-            TabConfiguration.DRAWER_BOTTOM
+            TabConfiguration.DRAWER_SIDE
         } else {
             TabConfiguration.DESKTOP
         }
