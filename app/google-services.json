@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "149370227461",
+    "project_id": "rio-browser-debug",
+    "storage_bucket": "rio-browser-debug.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:149370227461:android:387946bf8a7449cb2d056c",
+        "android_client_info": {
+          "package_name": "com.internet.vsbrowser.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTNhUnZFYQ_o0f1A-WyENifGpbzznARnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

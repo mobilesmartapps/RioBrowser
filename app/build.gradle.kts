@@ -26,11 +26,6 @@ android {
         create("lightningPlus").apply {
             setRoot("src/LightningPlus")
         }
-        if (!isCi) {
-            create("lightningLite").apply {
-                setRoot("src/LightningLite")
-            }
-        }
     }
 
     buildFeatures {
@@ -70,18 +65,10 @@ android {
         create("lightningPlus") {
             dimension = "capabilities"
             buildConfigField("boolean", "FULL_VERSION", "Boolean.parseBoolean(\"true\")")
-            applicationId = "acr.browser.lightning"
+            applicationId = "com.internet.vsbrowser.debug"
             versionCode = 101
         }
 
-        if (!isCi) {
-            create("lightningLite") {
-                dimension = "capabilities"
-                buildConfigField("boolean", "FULL_VERSION", "Boolean.parseBoolean(\"false\")")
-                applicationId = "acr.browser.barebones"
-                versionCode = 102
-            }
-        }
     }
     packaging {
         resources {
