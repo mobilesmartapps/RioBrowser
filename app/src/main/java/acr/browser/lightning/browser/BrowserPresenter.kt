@@ -45,6 +45,7 @@ import acr.browser.lightning.utils.isHistoryUrl
 import acr.browser.lightning.utils.isSpecialUrl
 import acr.browser.lightning.utils.smartUrlFilter
 import acr.browser.lightning.utils.value
+import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.core.net.toUri
 import io.reactivex.rxjava3.core.Maybe
@@ -90,7 +91,7 @@ class BrowserPresenter @Inject constructor(
     @IncognitoMode private val incognitoMode: Boolean
 ) {
 
-    private var view: BrowserContract.View? = null
+    /*private*/ var view: BrowserContract.View? = null
     private var viewState: BrowserViewState = BrowserViewState(
         displayUrl = "",
         isRefresh = true,
@@ -106,14 +107,14 @@ class BrowserPresenter @Inject constructor(
         isRootFolder = true,
         findInPage = ""
     )
-    private var tabListState: List<TabViewState> = emptyList()
-    private var currentTab: TabModel? = null
-    private var currentFolder: Bookmark.Folder = Bookmark.Folder.Root
-    private var isTabDrawerOpen = false
-    private var isBookmarkDrawerOpen = false
-    private var isSearchViewFocused = false
-    private var pendingAction: BrowserContract.Action.LoadUrl? = null
-    private var isCustomViewShowing = false
+   /* private*/ var tabListState: List<TabViewState> = emptyList()
+   /* private*/ var currentTab: TabModel? = null
+   /* private*/ var currentFolder: Bookmark.Folder = Bookmark.Folder.Root
+   /* private*/ var isTabDrawerOpen = false
+   /* private*/ var isBookmarkDrawerOpen = false
+   /* private*/ var isSearchViewFocused = false
+   /* private*/ var pendingAction: BrowserContract.Action.LoadUrl? = null
+    /*private*/ var isCustomViewShowing = false
 
     private val compositeDisposable = CompositeDisposable()
     private val allTabsDisposable = CompositeDisposable()
@@ -432,7 +433,7 @@ class BrowserPresenter @Inject constructor(
         }
     }
 
-    private fun createNewTabAndSelect(
+    /*private*/ fun createNewTabAndSelect(
         tabInitializer: TabInitializer,
         shouldSelect: Boolean,
         tabType: TabModel.Type = TabModel.Type.NORMAL
@@ -446,10 +447,10 @@ class BrowserPresenter @Inject constructor(
             }
     }
 
-    private fun List<TabViewState>.tabIndexForId(id: Int?): Int =
+    /*private*/ fun List<TabViewState>.tabIndexForId(id: Int?): Int =
         indexOfFirst { it.id == id }
 
-    private fun List<TabViewState>.indexOfCurrentTab(): Int = tabIndexForId(currentTab?.id)
+    /*private*/ fun List<TabViewState>.indexOfCurrentTab(): Int = tabIndexForId(currentTab?.id)
 
     /**
      * Call when the user selects a combination of keys to perform a shortcut.
@@ -504,6 +505,8 @@ class BrowserPresenter @Inject constructor(
         }
     }
 
+
+
     /**
      * Call when the user clicks on the close button for the tab at the provided [index]
      */
@@ -537,6 +540,9 @@ class BrowserPresenter @Inject constructor(
             }
     }
 
+    fun closeTab(){
+        onTabClose(tabListState.indexOfCurrentTab())
+    }
     /**
      * Call when the tab drawer is opened or closed.
      *
@@ -549,7 +555,7 @@ class BrowserPresenter @Inject constructor(
     /**
      * Call when the bookmark drawer is opened or closed.
      *
-     * @param isOpen True if the drawer is now open, false if it is now closed.
+     * @paralm isOpen True if the drawer is now open, false if it is now closed.
      */
     fun onBookmarkDrawerMoved(isOpen: Boolean) {
         isBookmarkDrawerOpen = isOpen
@@ -560,7 +566,10 @@ class BrowserPresenter @Inject constructor(
      * from [onBackClick] which is called when the user presses the browser's back button.
      */
     fun onNavigateBack() {
+
+
         when {
+
             isCustomViewShowing -> {
                 view?.hideCustomView()
                 currentTab?.hideCustomView()
@@ -608,6 +617,7 @@ class BrowserPresenter @Inject constructor(
      * Call when the user clicks on the home button.
      */
     fun onHomeClick() {
+
         currentTab?.loadFromInitializer(homePageInitializer)
     }
 
@@ -782,6 +792,7 @@ class BrowserPresenter @Inject constructor(
      * Call when the user clicks on a bookmark from the bookmark list at the provided [index].
      */
     fun onBookmarkClick(index: Int) {
+        Log.d("TAG_DEBUG", "onBookmarkClick" )
         when (val bookmark = viewState.bookmarks[index]) {
             is Bookmark.Entry -> {
                 currentTab?.loadUrl(bookmark.url)
@@ -1270,6 +1281,7 @@ class BrowserPresenter @Inject constructor(
         longPress: LongPress,
         imageLongPressEvent: BrowserContract.ImageLongPressEvent
     ) {
+        //Log.d("TAG_DEBUG" ,"onImageLongPressEvent ")
         when (imageLongPressEvent) {
             BrowserContract.ImageLongPressEvent.NEW_TAB ->
                 longPress.targetUrl?.let {

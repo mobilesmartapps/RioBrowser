@@ -50,4 +50,6 @@ class BottomTabViewDelegate(binding: BrowserActivityBottomBinding) : ViewDelegat
     override val bookmarkBackButton: ImageView = binding.bookmarkBackButton
     override val searchSslStatus: ImageView = binding.searchSslStatus
     override val progressView: ProgressBar = binding.progressView
+    override val bookmarkRecyclerView: RecyclerView = binding.drawerTabsList
+
 }

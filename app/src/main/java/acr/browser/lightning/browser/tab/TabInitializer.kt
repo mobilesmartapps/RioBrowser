@@ -1,6 +1,7 @@
 package acr.browser.lightning.browser.tab
 
 import acr.browser.lightning.R
+import acr.browser.lightning.browser.BrowserActivity
 import acr.browser.lightning.browser.di.DiskScheduler
 import acr.browser.lightning.browser.di.MainScheduler
 import acr.browser.lightning.constant.SCHEME_BOOKMARKS
@@ -15,6 +16,7 @@ import acr.browser.lightning.preference.UserPreferences
 import android.app.Activity
 import android.os.Bundle
 import android.os.Message
+import android.view.View
 import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
 import dagger.Reusable
@@ -62,11 +64,36 @@ class HomePageInitializer @Inject constructor(
     override fun initialize(webView: WebView, headers: Map<String, String>) {
         val homepage = userPreferences.homepage
 
-        when (homepage) {
+      /*  when (homepage) {
             SCHEME_HOMEPAGE -> startPageInitializer
             SCHEME_BOOKMARKS -> bookmarkPageInitializer
             else -> UrlInitializer(homepage)
-        }.initialize(webView, headers)
+        }.initialize(webView, headers)*/
+
+        when (homepage) {
+            SCHEME_HOMEPAGE -> {
+                // ✅ Don't load anything — just hide WebView and show fragment
+                webView.visibility = View.VISIBLE
+                startPageInitializer
+
+               /* webView.visibility = View.GONE
+                (webView.context as? BrowserActivity)?.showNativeHomeFragment()*/
+            }
+
+            SCHEME_BOOKMARKS -> {
+
+                webView.visibility = View.GONE
+                (webView.context as? BrowserActivity)?.showNativeHomeFragment()
+               // bookmarkPageInitializer.initialize(webView, headers)
+            }
+
+            else -> {
+                webView.visibility = View.VISIBLE
+                (webView.context as? BrowserActivity)?.hideRecyclerView()
+                UrlInitializer(homepage).initialize(webView, headers)
+            }
+        }
+
     }
 
 }
@@ -121,11 +148,11 @@ abstract class HtmlPageFactoryInitializer(
 ) : TabInitializer {
 
     override fun initialize(webView: WebView, headers: Map<String, String>) {
-        htmlPageFactory
+       /* htmlPageFactory
             .buildPage()
             .subscribeOn(diskScheduler)
             .observeOn(foregroundScheduler)
-            .subscribeBy(onSuccess = { webView.loadUrl(it, headers) })
+            .subscribeBy(onSuccess = { webView.loadUrl(it, headers) })*/
     }
 
 }

@@ -82,4 +82,6 @@ interface ViewDelegate {
 
     val progressView: ProgressBar
 
+    val bookmarkRecyclerView : RecyclerView
+
 }

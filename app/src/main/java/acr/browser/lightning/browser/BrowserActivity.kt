@@ -8,6 +8,10 @@ import acr.browser.lightning.browser.bookmark.BookmarkRecyclerViewAdapter
 import acr.browser.lightning.browser.color.ColorAnimator
 import acr.browser.lightning.browser.di.MainHandler
 import acr.browser.lightning.browser.di.injector
+import acr.browser.lightning.browser.home.adpter.BookmarkHomeAdapter
+import acr.browser.lightning.browser.home.ui.viewmodels.BookmarkHomeViewModel
+import acr.browser.lightning.browser.home.ui.viewmodels.BookmarkHomeViewModelFactory
+
 import acr.browser.lightning.browser.image.ImageLoader
 import acr.browser.lightning.browser.keys.KeyEventAdapter
 import acr.browser.lightning.browser.menu.MenuItemAdapter
@@ -17,6 +21,7 @@ import acr.browser.lightning.browser.search.StyleRemovingTextWatcher
 import acr.browser.lightning.browser.tab.BottomDrawerTabRecyclerViewAdapter
 import acr.browser.lightning.browser.tab.DesktopTabRecyclerViewAdapter
 import acr.browser.lightning.browser.tab.DrawerTabRecyclerViewAdapter
+import acr.browser.lightning.browser.tab.TabModel
 import acr.browser.lightning.browser.tab.TabPager
 import acr.browser.lightning.browser.tab.TabViewHolder
 import acr.browser.lightning.browser.tab.TabViewState
@@ -34,6 +39,8 @@ import acr.browser.lightning.database.Bookmark
 import acr.browser.lightning.database.HistoryEntry
 import acr.browser.lightning.database.SearchSuggestion
 import acr.browser.lightning.database.WebPage
+import acr.browser.lightning.database.bookmark.BookmarkDatabase
+import acr.browser.lightning.database.bookmark.BookmarkRepository
 import acr.browser.lightning.database.downloads.DownloadEntry
 import acr.browser.lightning.databinding.BrowserActivityBottomBinding
 import acr.browser.lightning.databinding.BrowserActivityDesktopBinding
@@ -53,8 +60,11 @@ import acr.browser.lightning.utils.ProxyUtils
 import acr.browser.lightning.utils.value
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -71,8 +81,11 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.MenuRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -101,6 +114,7 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
     private var customView: View? = null
 
     private var pendingScroll = -1
+
 
     @Suppress("ConvertLambdaToReference")
     private val launcher = registerForActivityResult(
@@ -161,7 +175,15 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
     @DrawableRes
     abstract fun homeIcon(): Int
 
+
+    //TODO -My changes
+    private lateinit var viewModel: BookmarkHomeViewModel
+    private lateinit var adapter: BookmarkHomeAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        applicationContext
+            .let { (it as acr.browser.lightning.BrowserApp).applicationComponent }
+            .inject(this)
         super.onCreate(savedInstanceState)
         binding = when (userPreferences.tabConfiguration) {
             TabConfiguration.DESKTOP -> {
@@ -175,7 +197,7 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
             }
 
             TabConfiguration.DRAWER_BOTTOM -> {
-                val actualBinding = BrowserActivityBottomBinding.inflate(LayoutInflater.from(this))
+                val  actualBinding = BrowserActivityBottomBinding.inflate(LayoutInflater.from(this))
                 BottomTabViewDelegate(actualBinding)
             }
         }
@@ -196,10 +218,16 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
             .toolbarRoot(binding.uiLayout)
             .browserRoot(binding.browserLayoutContainer)
             .toolbar(binding.toolbarLayout)
-            .initialIntent(intent.takeIf { savedInstanceState == null })
+          //  .initialIntent(intent.takeIf { savedInstanceState == null })
+            .initialIntent(  null )
             .incognitoMode(isIncognito())
             .build()
             .inject(this)
+
+       /* if (intent.data == null && savedInstanceState == null) {
+            // Only show if app opened freshly with no specific URL
+             showNativeHomeFragment()
+        }*/
 
         binding.drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
 
@@ -361,7 +389,20 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
         tabPager.longPressListener = presenter::onPageLongPress
 
         onBackPressedDispatcher.addCallback {
-            presenter.onNavigateBack()
+
+            presenter.onTabClose(
+                presenter.tabListState.indexOfFirst { it.id == presenter.currentTab?.id }
+            )
+            if (binding.bookmarkRecyclerView.isGone)
+            {
+                binding.bookmarkRecyclerView.visibility = View.VISIBLE
+            }
+
+            //presenter.onNavigateBack()
+            Log.e("TAG_TAG","isCustomViewShowing: ${presenter.isCustomViewShowing}")
+            Log.e("TAG_TAG","isTabDrawerOpen: ${presenter.isTabDrawerOpen}")
+            Log.e("TAG_TAG","currentTab: ${presenter.currentTab?.canGoBack()}")
+            Log.e("TAG_TAG","currentTab: ${presenter.currentTab?.tabType}")
         }
     }
 
@@ -797,6 +838,7 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
         customView?.let(binding.root::removeView)
         customView = null
         setFullscreen(enabled = false, immersive = false)
+
     }
 
     /**
@@ -859,4 +901,86 @@ abstract class BrowserActivity : ThemableBrowserActivity() {
             View.VISIBLE
         }
     }
+
+
+    fun showNativeHomeFragment() {
+       /* val containerId = binding.contentFrame.id
+        val fragment = supportFragmentManager.findFragmentByTag("BookmarkHomeFragment")
+        if (fragment == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(containerId,  BookmarkHomeFragment(), "BookmarkHomeFragment")
+                .commitAllowingStateLoss()
+        }*/
+
+       // binding.contentFrame.visibility = View.GONE
+        val bookmarkRepository: BookmarkRepository = BookmarkDatabase( application)
+
+        val factory = BookmarkHomeViewModelFactory(bookmarkRepository)
+        viewModel = ViewModelProvider(this, factory)[BookmarkHomeViewModel::class.java]
+
+        viewModel.bookmarks.observe(this) { bookmarks ->
+            Log.e("TAG_DATA", "bookmarks :${bookmarks.size}")
+            adapter.submitList(bookmarks)
+        }
+
+        adapter = BookmarkHomeAdapter(
+            imageLoader = imageLoader,
+            onClick = { bookmark ->
+                binding.bookmarkRecyclerView.visibility = View.GONE
+                binding.contentFrame.visibility = View.VISIBLE
+                openUrlInNewTab(bookmark.url)
+            }
+        )
+        binding.bookmarkRecyclerView.layoutManager = GridLayoutManager(this, 4)
+        binding.bookmarkRecyclerView.adapter = adapter
+        val spanCount = 4
+        val spacingInDp = 8
+        val spacing = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            spacingInDp.toFloat(),
+            resources.displayMetrics
+        ).toInt()
+
+        binding.bookmarkRecyclerView.addItemDecoration(object : RecyclerView.ItemDecoration() {
+            override fun getItemOffsets(
+                outRect: Rect,
+                view: View,
+                parent: RecyclerView,
+                state: RecyclerView.State
+            ) {
+                val position = parent.getChildAdapterPosition(view)
+                val column = position % spanCount
+
+                outRect.left = spacing - column * spacing / spanCount
+                outRect.right = (column + 1) * spacing / spanCount
+
+                // Optional: vertical spacing
+                if (position >= spanCount) {
+                    outRect.top = spacing
+                }
+            }
+        })
+
+    }
+
+    fun hideRecyclerView(){
+        binding.bookmarkRecyclerView.visibility = View.GONE
+    }
+    fun removeNativeHomeFragmentIfVisible() {
+        val fragment = supportFragmentManager.findFragmentByTag("BookmarkHomeFragment")
+        if (fragment != null) {
+            supportFragmentManager.beginTransaction()
+                .remove(fragment)
+                .commitAllowingStateLoss()
+        }
+    }
+
+    fun openUrlInNewTab(url: String) {
+        presenter.createNewTabAndSelect(
+            acr.browser.lightning.browser.tab.UrlInitializer(url),
+            shouldSelect = true
+        )
+       // removeNativeHomeFragmentIfVisible()
+    }
+
 }
